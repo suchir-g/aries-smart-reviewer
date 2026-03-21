@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const newsRouter = require('./routes/news');
 const analyseRouter = require('./routes/analyse');
 const pulseRouter = require('./routes/pulse');
+const chatRouter = require('./routes/chat');
 const Article = require('./models/Article');
 const { load: loadSentimentModel } = require('./sentiment');
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api/news', newsRouter);
 app.use('/api/analyse', analyseRouter);
 app.use('/api/pulse', pulseRouter);
+app.use('/api/chat', chatRouter);
 
 // GET /api/history — all analysed articles, newest first
 app.get('/api/history', async (_req, res) => {
