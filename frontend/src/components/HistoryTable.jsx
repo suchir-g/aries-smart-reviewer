@@ -25,18 +25,17 @@ export default function HistoryTable({ history, onSelect }) {
         {history.map((item) => (
           <tr key={item._id ?? item.url} onClick={() => onSelect(item)} className="history-row">
             <td className="history-title">
-              {item.title}
-              {item.url && (
+              {item.url ? (
                 <a
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="history-link"
+                  className="history-title-link"
                   onClick={e => e.stopPropagation()}
                 >
-                  ↗
+                  {item.title}
                 </a>
-              )}
+              ) : item.title}
             </td>
             <td>{item.source?.name ?? item.source}</td>
             <td>

@@ -4,6 +4,7 @@ import ArticleCard from './components/ArticleCard'
 import AnalysisPanel from './components/AnalysisPanel'
 import HistoryTable from './components/HistoryTable'
 import GraphView from './components/GraphView'
+import TopicPulse from './components/TopicPulse'
 import './App.css'
 
 const API = 'http://localhost:3001'
@@ -29,6 +30,13 @@ export default function App() {
   useEffect(() => {
     refreshHistoryAndGraph()
   }, [])
+
+  useEffect(() => {
+    if (!selectedArticle) return
+    const onKey = (e) => { if (e.key === 'Escape') setSelectedArticle(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedArticle])
 
   async function refreshHistoryAndGraph() {
     try {
@@ -82,8 +90,9 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Smart Reviewer</h1>
-        <p className="subtitle">Search news articles and get AI-powered summaries &amp; sentiment</p>
+        <h1><em>Smart</em> Reviewer</h1>
+        <p className="subtitle">AI-powered summaries &amp; sentiment analysis</p>
+        <p className="masthead-date">{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
       </header>
 
       <main className="app-main">
@@ -108,10 +117,12 @@ export default function App() {
         )}
 
         {selectedArticle && (
-          <section className="panel-section">
-            <h2 className="section-title">Analysis</h2>
-            <AnalysisPanel article={selectedArticle} />
-          </section>
+          <div className="modal-backdrop" onClick={() => setSelectedArticle(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <button className="modal-close" onClick={() => setSelectedArticle(null)} aria-label="Close">✕</button>
+              <AnalysisPanel article={selectedArticle} />
+            </div>
+          </div>
         )}
 
         <section className="history-section">
@@ -128,6 +139,12 @@ export default function App() {
             >
               Table
             </button>
+            <button
+              className={`tab-btn${activeTab === 'pulse' ? ' tab-active' : ''}`}
+              onClick={() => setActiveTab('pulse')}
+            >
+              Pulse
+            </button>
           </div>
 
           {activeTab === 'graph' && (
@@ -135,6 +152,9 @@ export default function App() {
           )}
           {activeTab === 'table' && (
             <HistoryTable history={history} onSelect={handleSelect} />
+          )}
+          {activeTab === 'pulse' && (
+            <TopicPulse onFetch={(q) => apiFetch(`/api/pulse?q=${encodeURIComponent(q)}`)} />
           )}
         </section>
       </main>
