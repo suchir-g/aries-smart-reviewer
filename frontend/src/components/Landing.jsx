@@ -69,6 +69,8 @@ export default function Landing({ history, onSearch, setPage }) {
         <div className="landing-blob landing-blob-1" />
         <div className="landing-blob landing-blob-2" />
         <div className="landing-blob landing-blob-3" />
+        <div className="landing-blob landing-blob-4" />
+        <div className="landing-blob landing-blob-5" />
         <div className="landing-hero-inner">
           <p className="landing-kicker">News intelligence</p>
           <h1 className="landing-title"><em>Smart</em> Reviewer</h1>
