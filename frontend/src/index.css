@@ -35,21 +35,68 @@
 body { margin: 0; }
 #root { min-height: 100svh; }
 
-/* Grain overlay */
+/* Grain overlay — animated film grain */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 9999;
   pointer-events: none;
-  opacity: 0.038;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.32;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
-  background-size: 200px 200px;
+  background-size: 160px 160px;
+  animation: grain 0.5s steps(1) infinite;
+  will-change: background-position;
+}
+
+@keyframes grain {
+  0%   { background-position:   0%   0% }
+  15%  { background-position:  25%  40% }
+  30%  { background-position:  55%  15% }
+  45%  { background-position:  80%  65% }
+  60%  { background-position:  10%  80% }
+  75%  { background-position:  45%  30% }
+  90%  { background-position:  70%  55% }
+  100% { background-position:   0%   0% }
 }
 
 @media (prefers-color-scheme: dark) {
-  body::after { opacity: 0.055; }
+  body::after {
+    mix-blend-mode: screen;
+    opacity: 0.08;
+  }
+}
+
+/* Custom cursor — hide native */
+*, *::before, *::after { cursor: none !important; }
+
+.cursor-dot {
+  position: fixed;
+  top: -3px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-h);
+  pointer-events: none;
+  z-index: 999999;
+  will-change: transform;
+}
+
+.cursor-ring {
+  position: fixed;
+  top: -18px;
+  left: -18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-h);
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 999999;
+  will-change: transform;
 }
 
 h1, h2, h3 {

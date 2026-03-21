@@ -8,6 +8,7 @@ import HistoryTable from './components/HistoryTable'
 import TopicPulse from './components/TopicPulse'
 import ChatPage from './components/ChatPage'
 import DataCollect from './components/DataCollect'
+import CustomCursor from './components/CustomCursor'
 import './App.css'
 
 const API = 'http://localhost:3001'
@@ -92,6 +93,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <CustomCursor />
       <Nav page={page} setPage={setPage} chatOpen={chatOpen} setChatOpen={setChatOpen} />
 
       {page === 'landing' && (
