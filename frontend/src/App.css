@@ -1003,40 +1003,7 @@
   flex-shrink: 0;
 }
 
-/* ── Graph Sample Banner ────────────────────────────── */
-.graph-sample-banner {
-  padding: 10px 16px;
-  margin-bottom: 16px;
-  font-family: var(--sans);
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
-  color: var(--text);
-  background: var(--bg-subtle);
-  border: 1px dashed var(--border-strong);
-}
-
-/* ── Graph Filter ───────────────────────────────────── */
-.graph-filter {
-  margin-bottom: 18px;
-}
-
-.graph-filter-label {
-  display: block;
-  font-family: var(--sans);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text);
-  margin-bottom: 10px;
-}
-
-.graph-filter-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
+/* ── Topic chip (used in Pulse) */
 .graph-chip {
   padding: 4px 12px;
   font-family: var(--sans);
@@ -1061,50 +1028,29 @@
   border-color: var(--text-h);
 }
 
-/* ── Graph ──────────────────────────────────────────── */
-.graph-wrap {
-  position: relative;
+/* ── Skeleton ───────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
 }
 
-.graph-empty {
-  font-family: var(--body-serif);
-  font-style: italic;
-  color: var(--text);
-  font-size: 0.95rem;
-  padding: 48px 0;
-  text-align: center;
-  border: 1px dashed var(--border);
+.skeleton {
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--border) 25%,
+    var(--bg-subtle) 50%,
+    var(--border) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
 }
 
-.graph-legend {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.legend-label {
-  font-family: var(--sans);
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text);
-}
+.skeleton-title  { height: 28px; width: 80%; margin-bottom: 10px; }
+.skeleton-source { height: 12px; width: 30%; }
+.skeleton-line   { height: 13px; width: 100%; margin-bottom: 10px; }
+.skeleton-bar    { height: 8px;  width: 160px; margin-top: 4px; }
+.skeleton-chip   { height: 24px; width: 52px; border-radius: 2px; }
 
 /* ── Modal ──────────────────────────────────────────── */
 .modal-backdrop {

@@ -1,7 +1,6 @@
 const LINKS = [
   { id: 'search',  label: 'Search'  },
   { id: 'pulse',   label: 'Pulse'   },
-  { id: 'graph',   label: 'Graph'   },
   { id: 'history', label: 'History' },
 ]
 

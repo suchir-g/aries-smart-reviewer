@@ -5,7 +5,6 @@ import SearchBar from './components/SearchBar'
 import ArticleCard from './components/ArticleCard'
 import AnalysisPanel from './components/AnalysisPanel'
 import HistoryTable from './components/HistoryTable'
-import GraphView from './components/GraphView'
 import TopicPulse from './components/TopicPulse'
 import './App.css'
 
@@ -25,22 +24,17 @@ async function apiFetch(path, options) {
 export default function App() {
   const [page, setPage] = useState('landing')
 
-  // Shared data
   const [history, setHistory] = useState([])
-  const [graphData, setGraphData] = useState({ nodes: [], links: [] })
 
-  // Search page state
   const [query, setQuery] = useState('')
   const [articles, setArticles] = useState([])
   const [searching, setSearching] = useState(false)
   const [analysing, setAnalysing] = useState(false)
 
-  // Modal
   const [selectedArticle, setSelectedArticle] = useState(null)
-
   const [error, setError] = useState(null)
 
-  useEffect(() => { refreshHistoryAndGraph() }, [])
+  useEffect(() => { refreshHistory() }, [])
 
   useEffect(() => {
     if (!selectedArticle) return
@@ -49,14 +43,10 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedArticle])
 
-  async function refreshHistoryAndGraph() {
+  async function refreshHistory() {
     try {
-      const [hist, graph] = await Promise.all([
-        apiFetch('/api/history'),
-        apiFetch('/api/graph?includeIsolated=true'),
-      ])
+      const hist = await apiFetch('/api/history')
       setHistory(hist)
-      setGraphData(graph)
     } catch (err) {
       setError(err.message)
     }
@@ -89,7 +79,7 @@ export default function App() {
         body: JSON.stringify(article),
       })
       setSelectedArticle(result)
-      await refreshHistoryAndGraph()
+      await refreshHistory()
     } catch (err) {
       setError(err.message)
     } finally {
@@ -142,13 +132,6 @@ export default function App() {
             </div>
           )}
 
-          {page === 'graph' && (
-            <div className="page">
-              <h2 className="section-title">Sentiment Graph</h2>
-              <GraphView graphData={graphData} onSelectArticle={setSelectedArticle} />
-            </div>
-          )}
-
           {page === 'history' && (
             <div className="page">
               <h2 className="section-title">Analysis History</h2>
@@ -158,11 +141,33 @@ export default function App() {
         </main>
       )}
 
-      {selectedArticle && (
-        <div className="modal-backdrop" onClick={() => setSelectedArticle(null)}>
+      {(analysing || selectedArticle) && (
+        <div className="modal-backdrop" onClick={() => !analysing && setSelectedArticle(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setSelectedArticle(null)}>✕</button>
-            <AnalysisPanel article={selectedArticle} />
+            {!analysing && (
+              <button className="modal-close" onClick={() => setSelectedArticle(null)}>✕</button>
+            )}
+            {analysing ? (
+              <div className="analysis-panel skeleton-panel">
+                <div className="panel-header">
+                  <div className="skeleton skeleton-title" />
+                  <div className="skeleton skeleton-source" />
+                </div>
+                <div className="panel-body">
+                  <div className="skeleton skeleton-line" />
+                  <div className="skeleton skeleton-line" style={{ width: '88%' }} />
+                  <div className="skeleton skeleton-line" style={{ width: '72%' }} />
+                  <div className="skeleton skeleton-bar" />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <div className="skeleton skeleton-chip" />
+                    <div className="skeleton skeleton-chip" style={{ width: 64 }} />
+                    <div className="skeleton skeleton-chip" style={{ width: 80 }} />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <AnalysisPanel article={selectedArticle} />
+            )}
           </div>
         </div>
       )}
