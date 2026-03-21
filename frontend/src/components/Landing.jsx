@@ -2,19 +2,18 @@ import { useState } from 'react'
 import { scoreToColour } from '../utils/sentiment'
 
 const TICKER_A = [
-  'Search & Analyse', 'Track Sentiment', 'Discover Connections',
+  'Search & Analyse', 'Track Sentiment', 'Detect Bias',
   'Compare Sources', 'Understand the News', 'Topic Pulse',
-  'AI-Powered Summaries', 'Sentiment Graphs', 'Follow the Story',
+  'AI-Powered Summaries', 'Other Perspectives', 'Follow the Story',
 ]
 
 const TICKER_B = [
   'TensorFlow Scoring', 'Real-Time Coverage', 'Positive · Neutral · Negative',
   'News Intelligence', 'Surface the Signal', 'Cross-Source Analysis',
-  'Know What the News Feels', 'Graph the Headlines', 'See the Full Picture',
+  'Know What the News Feels', 'Framing & Language', 'See the Full Picture',
 ]
 
 function Ticker({ items, reverse = false }) {
-  // Duplicate so the loop is seamless
   const all = [...items, ...items, ...items]
   return (
     <div className="ticker-track">
@@ -33,7 +32,7 @@ function Ticker({ items, reverse = false }) {
 const FEATURES = [
   {
     title: 'Search & Analyse',
-    body: 'Find articles on any subject and get AI-generated summaries with TensorFlow sentiment scoring — instantly.',
+    body: 'Find articles on any subject and get AI-generated summaries, TensorFlow sentiment scoring, and bias indicators — instantly.',
     action: 'search',
     cta: 'Search articles →',
   },
@@ -44,10 +43,10 @@ const FEATURES = [
     cta: 'Run a pulse →',
   },
   {
-    title: 'Sentiment Graph',
-    body: 'Articles you\'ve analysed are mapped as nodes. Shared topics draw connections — revealing the shape of the news.',
-    action: 'graph',
-    cta: 'Open graph →',
+    title: 'Ask the News',
+    body: 'Have a conversation about the news. Search live headlines, run sentiment analysis, or ask about articles you\'ve already reviewed.',
+    action: 'chat',
+    cta: 'Start asking →',
   },
 ]
 
@@ -67,11 +66,14 @@ export default function Landing({ history, onSearch, setPage }) {
 
       {/* Hero */}
       <section className="landing-hero">
+        <div className="landing-blob landing-blob-1" />
+        <div className="landing-blob landing-blob-2" />
+        <div className="landing-blob landing-blob-3" />
         <div className="landing-hero-inner">
           <p className="landing-kicker">News intelligence</p>
           <h1 className="landing-title"><em>Smart</em> Reviewer</h1>
           <p className="landing-tagline">
-            Search the news. Understand the sentiment. See the connections.
+            Search the news. Understand the sentiment. Detect the framing.
           </p>
           <form className="landing-search" onSubmit={handleSearch}>
             <input

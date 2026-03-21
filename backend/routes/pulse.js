@@ -30,8 +30,11 @@ router.get('/', async (req, res) => {
         const score = await analyseSentiment(`${a.title} ${a.description || ''}`);
         return {
           title: a.title,
+          description: a.description || '',
           source: a.source?.name || 'Unknown',
           url: a.url,
+          publishedAt: a.publishedAt,
+          image: a.image,
           score: parseFloat(score.toFixed(3)),
         };
       })

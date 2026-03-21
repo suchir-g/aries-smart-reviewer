@@ -6,6 +6,25 @@ const PRESET_TOPICS = [
   'Health', 'Science', 'Conflict', 'Business',
 ]
 
+const TOPIC_GROUPS = [
+  {
+    label: 'World & Politics',
+    topics: ['US Politics', 'Ukraine', 'Middle East', 'China', 'NATO', 'Elections', 'Diplomacy', 'Sanctions'],
+  },
+  {
+    label: 'Economy',
+    topics: ['Inflation', 'Stock Markets', 'Housing Crisis', 'Federal Reserve', 'Trade War', 'Recession', 'Oil Prices'],
+  },
+  {
+    label: 'Science & Tech',
+    topics: ['Artificial Intelligence', 'Cybersecurity', 'Space Exploration', 'Electric Vehicles', 'Biotech', 'Nuclear Energy'],
+  },
+  {
+    label: 'Society',
+    topics: ['Climate Change', 'Immigration', 'Healthcare', 'Education', 'Crime', 'Mental Health', 'Inequality'],
+  },
+]
+
 // ── Scatter strip ────────────────────────────────────────────────────────────
 function SentimentScatter({ articles }) {
   const [hovered, setHovered] = useState(null)
@@ -17,7 +36,6 @@ function SentimentScatter({ articles }) {
   const midY  = PAD.top + plotH / 2
 
   const xOf  = s  => PAD.left + ((s + 1) / 2) * plotW
-  // Spread dots into 4 bands by index to minimise overlap
   const yOf  = i  => midY + (((i % 4) - 1.5) / 1.5) * (plotH * 0.28)
 
   const ticks = [-1, -0.5, 0, 0.5, 1]
@@ -36,14 +54,8 @@ function SentimentScatter({ articles }) {
           </linearGradient>
         </defs>
 
-        {/* Background fill */}
-        <rect
-          x={PAD.left} y={PAD.top}
-          width={plotW} height={plotH}
-          fill="url(#sg)"
-        />
+        <rect x={PAD.left} y={PAD.top} width={plotW} height={plotH} fill="url(#sg)" />
 
-        {/* Tick marks + labels */}
         {ticks.map(t => (
           <g key={t}>
             <line
@@ -55,31 +67,24 @@ function SentimentScatter({ articles }) {
               x={xOf(t)} y={H - 4}
               textAnchor="middle"
               fontFamily="system-ui, sans-serif"
-              fontSize={9}
-              fill="var(--text)"
-              opacity={0.7}
+              fontSize={9} fill="var(--text)" opacity={0.7}
             >
               {t > 0 ? `+${t}` : t}
             </text>
           </g>
         ))}
 
-        {/* Baseline */}
         <line
           x1={PAD.left} y1={PAD.top + plotH}
           x2={W - PAD.right} y2={PAD.top + plotH}
           stroke="var(--border)" strokeWidth={1}
         />
-
-        {/* Centre dashed line */}
         <line
           x1={xOf(0)} y1={PAD.top}
           x2={xOf(0)} y2={PAD.top + plotH}
-          stroke="var(--border-strong)" strokeWidth={1}
-          strokeDasharray="3 3"
+          stroke="var(--border-strong)" strokeWidth={1} strokeDasharray="3 3"
         />
 
-        {/* Dots */}
         {articles.map((a, i) => {
           const cx = xOf(a.score)
           const cy = yOf(i)
@@ -90,8 +95,7 @@ function SentimentScatter({ articles }) {
               cx={cx} cy={cy}
               r={isHov ? 8 : 6}
               fill={scoreToColour(a.score)}
-              stroke="var(--bg)"
-              strokeWidth={2}
+              stroke="var(--bg)" strokeWidth={2}
               style={{ cursor: a.url ? 'pointer' : 'default', transition: 'r 0.1s' }}
               onMouseEnter={() => setHovered(i)}
               onMouseLeave={() => setHovered(null)}
@@ -100,12 +104,10 @@ function SentimentScatter({ articles }) {
           )
         })}
 
-        {/* Hover label */}
         {hovered !== null && (() => {
           const a  = articles[hovered]
           const cx = xOf(a.score)
           const cy = yOf(hovered)
-          const label = a.source
           const lx = Math.min(Math.max(cx, PAD.left + 40), W - PAD.right - 40)
           const ly = cy < midY ? cy + 22 : cy - 14
           return (
@@ -113,17 +115,14 @@ function SentimentScatter({ articles }) {
               x={lx} y={ly}
               textAnchor="middle"
               fontFamily="system-ui, sans-serif"
-              fontSize={10}
-              fontWeight={600}
-              fill="var(--text-h)"
+              fontSize={10} fontWeight={600} fill="var(--text-h)"
             >
-              {label}
+              {a.source}
             </text>
           )
         })()}
       </svg>
 
-      {/* Full title on hover — shown below the SVG */}
       <div className="scatter-tooltip">
         {hovered !== null
           ? articles[hovered].title
@@ -151,8 +150,31 @@ function SentimentBar({ score }) {
   )
 }
 
+// ── Empty state ───────────────────────────────────────────────────────────────
+function PulseEmptyState({ onSelect }) {
+  return (
+    <div className="pulse-empty-state">
+      <p className="pulse-empty-hint">Choose a topic to see how it's being covered right now.</p>
+      <div className="pulse-topic-groups">
+        {TOPIC_GROUPS.map(group => (
+          <div key={group.label} className="pulse-group">
+            <h3 className="pulse-group-label">{group.label}</h3>
+            <div className="pulse-group-topics">
+              {group.topics.map(t => (
+                <button key={t} className="pulse-topic-btn" onClick={() => onSelect(t)}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
-export default function TopicPulse({ onFetch }) {
+export default function TopicPulse({ onFetch, onAnalyse, analysing }) {
   const [topic,   setTopic]   = useState('')
   const [loading, setLoading] = useState(false)
   const [result,  setResult]  = useState(null)
@@ -161,6 +183,7 @@ export default function TopicPulse({ onFetch }) {
   async function run(q) {
     const query = q ?? topic.trim()
     if (!query) return
+    setTopic(query)
     setLoading(true)
     setError(null)
     setResult(null)
@@ -174,31 +197,17 @@ export default function TopicPulse({ onFetch }) {
     }
   }
 
-  function handlePreset(t) {
-    setTopic(t)
-    run(t)
-  }
+  const isEmpty = !result && !loading && !error
 
   return (
     <div className="pulse-wrap">
-      <div className="pulse-controls">
-        <div className="pulse-presets">
-          {PRESET_TOPICS.map(t => (
-            <button
-              key={t}
-              className={`graph-chip${topic === t ? ' graph-chip-active' : ''}`}
-              onClick={() => handlePreset(t)}
-              disabled={loading}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+      <div className="pulse-header">
+        <h2 className="pulse-title">Topic Pulse</h2>
         <div className="pulse-search">
           <input
             className="pulse-input"
             type="text"
-            placeholder="Custom topic…"
+            placeholder="Enter a topic…"
             value={topic}
             onChange={e => setTopic(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && run()}
@@ -212,10 +221,24 @@ export default function TopicPulse({ onFetch }) {
           </button>
         </div>
       </div>
+      <div className="pulse-presets">
+        {PRESET_TOPICS.map(t => (
+          <button
+            key={t}
+            className={`graph-chip${topic === t ? ' graph-chip-active' : ''}`}
+            onClick={() => run(t)}
+            disabled={loading}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
 
       {error && <div className="error-banner">{error}</div>}
 
       {loading && <div className="pulse-loading">Fetching &amp; scoring articles…</div>}
+
+      {isEmpty && <PulseEmptyState onSelect={run} />}
 
       {result && !loading && (
         <div className="pulse-results">
@@ -232,7 +255,6 @@ export default function TopicPulse({ onFetch }) {
           ) : (
             <>
               <SentimentScatter articles={result.articles} />
-
               <div className="pulse-chart">
                 {result.articles.map((a, i) => (
                   <div key={i} className="pulse-row">
@@ -253,6 +275,16 @@ export default function TopicPulse({ onFetch }) {
                       <span className="pulse-score" style={{ color: scoreToColour(a.score) }}>
                         {a.score > 0 ? '+' : ''}{a.score.toFixed(2)}
                       </span>
+                      {onAnalyse && (
+                        <button
+                          className="pulse-analyse-btn"
+                          onClick={() => onAnalyse(a)}
+                          disabled={analysing}
+                          title="Full analysis"
+                        >
+                          Analyse
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

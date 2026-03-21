@@ -128,8 +128,11 @@ export default function App() {
 
           {page === 'pulse' && (
             <div className="page">
-              <h2 className="section-title">Topic Pulse</h2>
-              <TopicPulse onFetch={(q) => apiFetch(`/api/pulse?q=${encodeURIComponent(q)}`)} />
+              <TopicPulse
+                onFetch={(q) => apiFetch(`/api/pulse?q=${encodeURIComponent(q)}`)}
+                onAnalyse={handleAnalyse}
+                analysing={analysing}
+              />
             </div>
           )}
 
