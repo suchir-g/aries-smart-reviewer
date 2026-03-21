@@ -185,7 +185,7 @@ export default function ChatPage() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Ask about the news… (Enter to send, Shift+Enter for newline)"
+          placeholder="Ask about the news…"
           rows={1}
           disabled={streaming}
         />

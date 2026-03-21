@@ -24,6 +24,7 @@ async function apiFetch(path, options) {
 
 export default function App() {
   const [page, setPage] = useState('landing')
+  const [chatOpen, setChatOpen] = useState(false)
 
   const [history, setHistory] = useState([])
 
@@ -90,7 +91,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Nav page={page} setPage={setPage} />
+      <Nav page={page} setPage={setPage} chatOpen={chatOpen} setChatOpen={setChatOpen} />
 
       {page === 'landing' && (
         <Landing history={history} onSearch={handleSearch} setPage={setPage} />
@@ -143,14 +144,17 @@ export default function App() {
             </div>
           )}
 
-          {page === 'chat' && (
-            <div className="page">
-              <h2 className="section-title">Ask the News</h2>
-              <ChatPage />
-            </div>
-          )}
         </main>
       )}
+
+      <div className={`chat-sidebar${chatOpen ? ' chat-sidebar-open' : ''}`}>
+        <div className="chat-sidebar-header">
+          <span className="chat-sidebar-title">Ask the News</span>
+          <button className="chat-sidebar-close" onClick={() => setChatOpen(false)}>✕</button>
+        </div>
+        <ChatPage />
+      </div>
+      {chatOpen && <div className="chat-sidebar-backdrop" onClick={() => setChatOpen(false)} />}
 
       {(analysing || selectedArticle) && (
         <div className="modal-backdrop" onClick={() => !analysing && setSelectedArticle(null)}>

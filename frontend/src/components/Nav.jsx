@@ -2,10 +2,9 @@ const LINKS = [
   { id: 'search',  label: 'Search'  },
   { id: 'pulse',   label: 'Pulse'   },
   { id: 'history', label: 'History' },
-  { id: 'chat',    label: 'Ask'     },
 ]
 
-export default function Nav({ page, setPage }) {
+export default function Nav({ page, setPage, chatOpen, setChatOpen }) {
   return (
     <nav className="app-nav">
       <button className="nav-brand" onClick={() => setPage('landing')}>
@@ -21,6 +20,12 @@ export default function Nav({ page, setPage }) {
             {label}
           </button>
         ))}
+        <button
+          className={`nav-ask-btn${chatOpen ? ' nav-ask-btn-active' : ''}`}
+          onClick={() => setChatOpen(o => !o)}
+        >
+          Ask
+        </button>
       </div>
     </nav>
   )
