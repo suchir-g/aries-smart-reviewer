@@ -1,10 +1,23 @@
 const express = require('express');
 const OpenAI = require('openai');
+const { extract } = require('@extractus/article-extractor');
 const Article = require('../models/Article');
 const { analyseSentiment } = require('../sentiment');
 
 const router = express.Router();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+async function fetchFullText(url) {
+  try {
+    const article = await extract(url, {}, { timeout: 8000 });
+    const text = article?.content
+      ? article.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      : null;
+    return text && text.length > 100 ? text : null;
+  } catch {
+    return null;
+  }
+}
 
 // POST /api/analyse
 router.post('/', async (req, res) => {
@@ -18,9 +31,19 @@ router.post('/', async (req, res) => {
       return res.json({ ...existing.toObject(), cached: true });
     }
 
-    // Run TF sentiment and OpenAI summary/topics in parallel
+    // Fetch full article text first (best-effort, falls back to snippet)
+    const fullText = await fetchFullText(url);
+    const sentimentInput = fullText || `${title} ${description}`;
+    const usedFullText = !!fullText;
+
+    // Build the article content block for OpenAI — use full text if available
+    const articleBody = fullText
+      ? `Article title: ${title}\n\nFull article text:\n${fullText.slice(0, 6000)}`
+      : `Article title: ${title}\nArticle description: ${description}`;
+
+    // Run TF sentiment and OpenAI summary/topics/bias in parallel
     const [sentimentScore, completion] = await Promise.all([
-      analyseSentiment(`${title} ${description}`),
+      analyseSentiment(sentimentInput),
       openai.chat.completions.create({
         model: 'gpt-4o-mini',
         max_tokens: 512,
@@ -37,8 +60,7 @@ router.post('/', async (req, res) => {
 
 For biasIndicators: identify 2-4 concrete language choices or framing patterns from the text — e.g. emotionally loaded words, passive voice hiding agency, only quoting one side, use of 'regime' vs 'government', hedging claims differently for different groups. Keep each indicator short (under 12 words). If there are no notable indicators, return an empty array.
 
-Article title: ${title}
-Article description: ${description}`,
+${articleBody}`,
           },
         ],
       }),
@@ -57,6 +79,10 @@ Article description: ${description}`,
     const sentiment =
       score > 0.2 ? 'positive' : score < -0.2 ? 'negative' : 'neutral';
 
+    const sentimentReason = usedFullText
+      ? `TensorFlow CNN (IMDB) — full article · confidence ${(Math.abs(score) * 100).toFixed(0)}% ${sentiment}`
+      : `TensorFlow CNN (IMDB) — headline only · confidence ${(Math.abs(score) * 100).toFixed(0)}% ${sentiment}`;
+
     const article = await Article.create({
       title,
       description,
@@ -67,7 +93,7 @@ Article description: ${description}`,
       summary: analysis.summary,
       sentiment,
       sentimentScore: score,
-      sentimentReason: `TensorFlow CNN model (IMDB) — confidence ${(Math.abs(score) * 100).toFixed(0)}% ${sentiment}`,
+      sentimentReason,
       topics: analysis.topics || [],
       biasSummary: analysis.biasSummary || '',
       biasIndicators: analysis.biasIndicators || [],
