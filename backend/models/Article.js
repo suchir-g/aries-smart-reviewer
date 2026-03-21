@@ -12,6 +12,8 @@ const articleSchema = new mongoose.Schema({
   sentimentScore: Number,
   sentimentReason: String,
   topics: [String],
+  biasSummary: String,
+  biasIndicators: [String],
   analysedAt: { type: Date, default: Date.now },
 });
 

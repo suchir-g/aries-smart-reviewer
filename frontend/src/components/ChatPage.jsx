@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 const API = 'http://localhost:3001'
 
@@ -36,7 +38,11 @@ function Message({ msg }) {
       ))}
       {msg.content && (
         <div className="chat-bubble">
-          {msg.content}
+          {isUser ? msg.content : (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {msg.content}
+            </ReactMarkdown>
+          )}
           {msg.streaming && <span className="chat-cursor" />}
         </div>
       )}

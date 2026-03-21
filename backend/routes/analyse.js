@@ -23,15 +23,19 @@ router.post('/', async (req, res) => {
       analyseSentiment(`${title} ${description}`),
       openai.chat.completions.create({
         model: 'gpt-4o-mini',
-        max_tokens: 256,
+        max_tokens: 512,
         messages: [
           {
             role: 'user',
             content: `Analyse this news article and respond ONLY with a JSON object, no other text:
 {
   "summary": "2-3 sentence summary of the article",
-  "topics": ["topic1", "topic2", "topic3"]
+  "topics": ["topic1", "topic2", "topic3"],
+  "biasSummary": "1-2 sentences on any framing bias, missing perspectives, or loaded language — or 'No notable bias detected' if balanced",
+  "biasIndicators": ["specific phrase or pattern 1", "specific phrase or pattern 2"]
 }
+
+For biasIndicators: identify 2-4 concrete language choices or framing patterns from the text — e.g. emotionally loaded words, passive voice hiding agency, only quoting one side, use of 'regime' vs 'government', hedging claims differently for different groups. Keep each indicator short (under 12 words). If there are no notable indicators, return an empty array.
 
 Article title: ${title}
 Article description: ${description}`,
@@ -65,6 +69,8 @@ Article description: ${description}`,
       sentimentScore: score,
       sentimentReason: `TensorFlow CNN model (IMDB) — confidence ${(Math.abs(score) * 100).toFixed(0)}% ${sentiment}`,
       topics: analysis.topics || [],
+      biasSummary: analysis.biasSummary || '',
+      biasIndicators: analysis.biasIndicators || [],
     });
 
     res.json({ ...article.toObject(), cached: false });
