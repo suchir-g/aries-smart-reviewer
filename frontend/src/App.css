@@ -877,6 +877,26 @@
   opacity: 0.6;
 }
 
+/* ── Scatter strip ──────────────────────────────────── */
+.scatter-wrap {
+  border: 1px solid var(--border);
+  padding: 12px 16px 8px;
+  margin-bottom: 24px;
+  background: var(--bg);
+}
+
+.scatter-tooltip {
+  font-family: var(--body-serif);
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--text);
+  min-height: 1.4em;
+  padding: 6px 2px 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
 .pulse-empty {
   font-family: var(--body-serif);
   font-style: italic;
