@@ -55,10 +55,29 @@ router.post('/', async (req, res) => {
   "summary": "2-3 sentence summary of the article",
   "topics": ["topic1", "topic2", "topic3"],
   "biasSummary": "1-2 sentences on any framing bias, missing perspectives, or loaded language — or 'No notable bias detected' if balanced",
-  "biasIndicators": ["specific phrase or pattern 1", "specific phrase or pattern 2"]
+  "biasIndicators": ["specific phrase or pattern 1", "specific phrase or pattern 2"],
+  "reviewers": [
+    {
+      "name": "Tone",
+      "score": 0.0,
+      "note": "one sentence on the emotional register and affect of the writing"
+    },
+    {
+      "name": "Framing",
+      "score": 0.0,
+      "note": "one sentence on what is foregrounded, backgrounded, or omitted"
+    },
+    {
+      "name": "Language",
+      "score": 0.0,
+      "note": "one sentence on word choices, loaded terms, or hedging patterns"
+    }
+  ]
 }
 
-For biasIndicators: identify 2-4 concrete language choices or framing patterns from the text — e.g. emotionally loaded words, passive voice hiding agency, only quoting one side, use of 'regime' vs 'government', hedging claims differently for different groups. Keep each indicator short (under 12 words). If there are no notable indicators, return an empty array.
+For each reviewer, score is a number from -1.0 (very negative) to +1.0 (very positive) reflecting how positively or negatively the article presents its subject — not your opinion of the subject itself. Scores should reflect the article's own sentiment, not the nature of the topic.
+
+For biasIndicators: identify 2-4 concrete language choices or framing patterns — e.g. emotionally loaded words, passive voice hiding agency, only quoting one side, use of 'regime' vs 'government'. Keep each under 12 words. Return an empty array if none.
 
 ${articleBody}`,
           },
@@ -75,13 +94,33 @@ ${articleBody}`,
       analysis = JSON.parse(match ? match[1] : raw);
     }
 
-    const score = Number(sentimentScore.toFixed(4));
+    const tfScore = Number(sentimentScore.toFixed(4));
+
+    // Build reviewer swarm from OpenAI response
+    const reviewers = (analysis.reviewers || []).map(r => ({
+      name: r.name,
+      score: Math.max(-1, Math.min(1, Number(r.score) || 0)),
+      note: r.note || '',
+    }));
+
+    // Consensus = mean of TF score + all reviewer scores
+    const allScores = [tfScore, ...reviewers.map(r => r.score)];
+    const consensus = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+    const score = Number(consensus.toFixed(4));
+
+    // Disagreement: std deviation across all scores
+    const mean = score;
+    const stdDev = Math.sqrt(allScores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / allScores.length);
+    const contested = stdDev > 0.28;
+
     const sentiment =
       score > 0.2 ? 'positive' : score < -0.2 ? 'negative' : 'neutral';
 
-    const sentimentReason = usedFullText
-      ? `TensorFlow CNN (IMDB) — full article · confidence ${(Math.abs(score) * 100).toFixed(0)}% ${sentiment}`
-      : `TensorFlow CNN (IMDB) — headline only · confidence ${(Math.abs(score) * 100).toFixed(0)}% ${sentiment}`;
+    const sentimentReason = [
+      usedFullText ? 'Full article' : 'Headline only',
+      `· ${allScores.length} reviewers · consensus ${score > 0 ? '+' : ''}${score.toFixed(2)}`,
+      contested ? '· ⚠ contested' : '',
+    ].join(' ').trim();
 
     const article = await Article.create({
       title,
@@ -97,6 +136,7 @@ ${articleBody}`,
       topics: analysis.topics || [],
       biasSummary: analysis.biasSummary || '',
       biasIndicators: analysis.biasIndicators || [],
+      reviewerScores: reviewers,
     });
 
     res.json({ ...article.toObject(), cached: false });

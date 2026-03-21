@@ -68,12 +68,55 @@ function RelatedArticles({ topics, currentUrl }) {
   )
 }
 
+function ReviewerSwarm({ reviewers, tfScore }) {
+  if (!reviewers?.length) return null
+  const allReviewers = [
+    { name: 'TF Model', score: tfScore, note: 'TensorFlow CNN trained on IMDB corpus' },
+    ...reviewers,
+  ]
+  return (
+    <div className="panel-swarm">
+      <h3 className="panel-section-label">Reviewer Swarm</h3>
+      <div className="swarm-list">
+        {allReviewers.map((r) => (
+          <div key={r.name} className="swarm-row">
+            <span className="swarm-name">{r.name}</span>
+            <div className="swarm-bar-wrap">
+              <div className="swarm-bar-track">
+                <div className="swarm-bar-midline" />
+                <div
+                  className="swarm-bar-fill"
+                  style={{
+                    left: r.score >= 0 ? '50%' : `${((r.score + 1) / 2) * 100}%`,
+                    width: `${Math.abs(r.score) * 50}%`,
+                    background: scoreToColour(r.score),
+                  }}
+                />
+              </div>
+              <span className="swarm-score" style={{ color: scoreToColour(r.score) }}>
+                {r.score > 0 ? '+' : ''}{r.score.toFixed(2)}
+              </span>
+            </div>
+            <span className="swarm-note">{r.note}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function AnalysisPanel({ article }) {
   if (!article) return null
 
-  const { title, source, url, summary, sentiment, sentimentScore, sentimentReason, topics, biasSummary, biasIndicators, cached } = article
+  const { title, source, url, summary, sentiment, sentimentScore, sentimentReason, topics, biasSummary, biasIndicators, reviewerScores, cached } = article
   const style = SENTIMENT_STYLES[sentiment] ?? SENTIMENT_STYLES.neutral
   const hasBias = biasSummary || biasIndicators?.length > 0
+
+  // Back-calculate approximate TF score: consensus = mean(tf, r1, r2, r3)
+  // consensus * 4 - sum(reviewers) = tf
+  const tfScore = reviewerScores?.length
+    ? Number((sentimentScore * (reviewerScores.length + 1) - reviewerScores.reduce((s, r) => s + r.score, 0)).toFixed(2))
+    : sentimentScore
 
   return (
     <div className="analysis-panel">
@@ -102,6 +145,8 @@ export default function AnalysisPanel({ article }) {
             ))}
           </div>
         )}
+
+        <ReviewerSwarm reviewers={reviewerScores} tfScore={tfScore} />
 
         {hasBias && (
           <div className="panel-bias">
