@@ -24,7 +24,20 @@ export default function HistoryTable({ history, onSelect }) {
       <tbody>
         {history.map((item) => (
           <tr key={item._id ?? item.url} onClick={() => onSelect(item)} className="history-row">
-            <td className="history-title">{item.title}</td>
+            <td className="history-title">
+              {item.title}
+              {item.url && (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="history-link"
+                  onClick={e => e.stopPropagation()}
+                >
+                  ↗
+                </a>
+              )}
+            </td>
             <td>{item.source?.name ?? item.source}</td>
             <td>
               <span className={SENTIMENT_STYLES[item.sentiment] ?? SENTIMENT_STYLES.neutral}>

@@ -25,6 +25,17 @@ app.get('/api/history', async (_req, res) => {
   }
 });
 
+// Two topics match if they are equal, one contains the other, or they share a word ≥4 chars
+function topicsMatch(a, b) {
+  const na = a.toLowerCase().trim();
+  const nb = b.toLowerCase().trim();
+  if (na === nb) return true;
+  if (na.includes(nb) || nb.includes(na)) return true;
+  const wordsA = na.split(/\s+/).filter(w => w.length >= 4);
+  const wordsB = new Set(nb.split(/\s+/).filter(w => w.length >= 4));
+  return wordsA.some(w => wordsB.has(w));
+}
+
 // GET /api/graph — articles as graph nodes + edges via shared topics
 app.get('/api/graph', async (req, res) => {
   try {
@@ -44,7 +55,7 @@ app.get('/api/graph', async (req, res) => {
     for (let i = 0; i < articles.length; i++) {
       for (let j = i + 1; j < articles.length; j++) {
         const shared = (articles[i].topics || []).filter(t =>
-          (articles[j].topics || []).includes(t)
+          (articles[j].topics || []).some(t2 => topicsMatch(t, t2))
         );
         if (shared.length > 0) {
           links.push({

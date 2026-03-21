@@ -427,12 +427,84 @@
   max-width: 440px;
 }
 
+.history-link {
+  margin-left: 8px;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--text);
+  text-decoration: none;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.history-link:hover {
+  opacity: 1;
+}
+
 .history-empty {
   font-family: var(--body-serif);
   font-style: italic;
   color: var(--text);
   font-size: 0.95rem;
   padding: 28px 0;
+}
+
+/* ── Graph Sample Banner ────────────────────────────── */
+.graph-sample-banner {
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border-strong);
+}
+
+/* ── Graph Filter ───────────────────────────────────── */
+.graph-filter {
+  margin-bottom: 18px;
+}
+
+.graph-filter-label {
+  display: block;
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.graph-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.graph-chip {
+  padding: 4px 12px;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+
+.graph-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text-h);
+}
+
+.graph-chip-active {
+  background: var(--text-h);
+  color: var(--bg);
+  border-color: var(--text-h);
 }
 
 /* ── Graph ──────────────────────────────────────────── */
