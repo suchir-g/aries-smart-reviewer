@@ -7,6 +7,7 @@ import AnalysisPanel from './components/AnalysisPanel'
 import HistoryTable from './components/HistoryTable'
 import TopicPulse from './components/TopicPulse'
 import ChatPage from './components/ChatPage'
+import DataCollect from './components/DataCollect'
 import './App.css'
 
 const API = 'http://localhost:3001'
@@ -141,6 +142,12 @@ export default function App() {
             <div className="page">
               <h2 className="section-title">Analysis History</h2>
               <HistoryTable history={history} onSelect={setSelectedArticle} />
+            </div>
+          )}
+
+          {page === 'collect' && (
+            <div className="page">
+              <DataCollect />
             </div>
           )}
 

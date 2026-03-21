@@ -202,7 +202,10 @@ export default function TopicPulse({ onFetch, onAnalyse, analysing }) {
   return (
     <div className="pulse-wrap">
       <div className="pulse-header">
-        <h2 className="pulse-title">Topic Pulse</h2>
+        <div className="pulse-header-left">
+          <h2 className="pulse-title">Topic Pulse</h2>
+          <p className="pulse-subtitle">Enter a topic to see how it's being covered right now — each dot is an article, scored and ranked by sentiment.</p>
+        </div>
         <div className="pulse-search">
           <input
             className="pulse-input"
@@ -221,6 +224,7 @@ export default function TopicPulse({ onFetch, onAnalyse, analysing }) {
           </button>
         </div>
       </div>
+
       <div className="pulse-presets">
         {PRESET_TOPICS.map(t => (
           <button

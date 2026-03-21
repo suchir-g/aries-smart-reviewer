@@ -142,6 +142,72 @@ export default function Landing({ history, onSearch, setPage }) {
           </button>
         </section>
       )}
+
+      {/* How it works */}
+      <section className="landing-how">
+        <div className="landing-how-inner">
+          <h2 className="landing-how-title">How the scoring works</h2>
+          <div className="landing-how-steps">
+            <div className="landing-how-step">
+              <span className="landing-how-num">01</span>
+              <h3 className="landing-how-step-title">Three independent passes</h3>
+              <p className="landing-how-step-body">
+                Each article is scored separately across its headline, lead paragraph, and full body by a TensorFlow CNN. Each pass returns a score in [−1, +1]. Divergence between them is itself informative — a sensational headline with a neutral body is a framing signal.
+              </p>
+              <div className="landing-formula">
+                <span className="lf-row"><span className="lf-label">Headline</span><span className="lf-val">× 0.20</span></span>
+                <span className="lf-row"><span className="lf-label">Lead</span><span className="lf-val">× 0.30</span></span>
+                <span className="lf-row"><span className="lf-label">Full Text</span><span className="lf-val">× 0.50</span></span>
+              </div>
+            </div>
+            <div className="landing-how-step">
+              <span className="landing-how-num">02</span>
+              <h3 className="landing-how-step-title">Certainty dampening</h3>
+              <p className="landing-how-step-body">
+                The weighted base is scaled by a certainty factor derived from the standard deviation across passes. High disagreement pulls the score toward neutral — uncertainty is part of the answer.
+              </p>
+              <div className="landing-formula">
+                <span className="lf-row"><span className="lf-label">σ</span><span className="lf-val">std dev of passes</span></span>
+                <span className="lf-row"><span className="lf-label">certainty</span><span className="lf-val">max(0.45, 1 − σ × 1.2)</span></span>
+                <span className="lf-row lf-row-result"><span className="lf-label">score</span><span className="lf-val">weighted × certainty</span></span>
+              </div>
+            </div>
+            <div className="landing-how-step">
+              <span className="landing-how-num">03</span>
+              <h3 className="landing-how-step-title">News model nudge</h3>
+              <p className="landing-how-step-body">
+                Every article analysed is saved as training data. Once enough data exists, a specially trained news model is built. When active, it contributes 15% to the final score — nudging it toward news-specific language patterns.
+              </p>
+              <div className="landing-formula">
+                <span className="lf-row"><span className="lf-label">base</span><span className="lf-val">× 0.85</span></span>
+                <span className="lf-row"><span className="lf-label">news model</span><span className="lf-val">× 0.15</span></span>
+                <span className="lf-row lf-row-result"><span className="lf-label">final</span><span className="lf-val">sum of above</span></span>
+              </div>
+            </div>
+            <div className="landing-how-step">
+              <span className="landing-how-num">04</span>
+              <h3 className="landing-how-step-title">Toxicity override</h3>
+              <p className="landing-how-step-body">
+                A TensorFlow toxicity classifier runs on every article. If toxic content is detected above 70% confidence, the final score is hard-anchored into negative territory regardless of the sentiment passes — preventing harmful framing from reading as positive.
+              </p>
+              <div className="landing-formula">
+                <span className="lf-row"><span className="lf-label">threshold</span><span className="lf-val">p &gt; 0.70</span></span>
+                <span className="lf-row"><span className="lf-label">cap</span><span className="lf-val">−0.30 − (p − 0.70) × 2.33</span></span>
+                <span className="lf-row lf-row-result"><span className="lf-label">result</span><span className="lf-val">min(score, cap)</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div className="landing-collect-cta">
+            <p className="landing-collect-text">
+              Want to accelerate training? Bulk-collect and rate articles across topics.
+            </p>
+            <button className="landing-collect-btn" onClick={() => setPage('collect')}>
+              Open data collector →
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

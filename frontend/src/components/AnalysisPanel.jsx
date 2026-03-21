@@ -68,12 +68,9 @@ function RelatedArticles({ topics, currentUrl }) {
   )
 }
 
-function ReviewerSwarm({ reviewers, tfScore }) {
+function ReviewerSwarm({ reviewers }) {
   if (!reviewers?.length) return null
-  const allReviewers = [
-    { name: 'TF Model', score: tfScore, note: 'TensorFlow CNN trained on IMDB corpus' },
-    ...reviewers,
-  ]
+  const allReviewers = reviewers
   return (
     <div className="panel-swarm">
       <h3 className="panel-section-label">Reviewer Swarm</h3>
@@ -112,12 +109,6 @@ export default function AnalysisPanel({ article }) {
   const style = SENTIMENT_STYLES[sentiment] ?? SENTIMENT_STYLES.neutral
   const hasBias = biasSummary || biasIndicators?.length > 0
 
-  // Back-calculate approximate TF score: consensus = mean(tf, r1, r2, r3)
-  // consensus * 4 - sum(reviewers) = tf
-  const tfScore = reviewerScores?.length
-    ? Number((sentimentScore * (reviewerScores.length + 1) - reviewerScores.reduce((s, r) => s + r.score, 0)).toFixed(2))
-    : sentimentScore
-
   return (
     <div className="analysis-panel">
       <div className="panel-header">
@@ -146,7 +137,7 @@ export default function AnalysisPanel({ article }) {
           </div>
         )}
 
-        <ReviewerSwarm reviewers={reviewerScores} tfScore={tfScore} />
+        <ReviewerSwarm reviewers={reviewerScores} />
 
         {hasBias && (
           <div className="panel-bias">

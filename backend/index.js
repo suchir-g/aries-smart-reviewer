@@ -9,7 +9,7 @@ const pulseRouter = require('./routes/pulse');
 const chatRouter = require('./routes/chat');
 const relatedRouter = require('./routes/related');
 const Article = require('./models/Article');
-const { load: loadSentimentModel } = require('./sentiment');
+const { load: loadSentimentModel, modelInfo } = require('./sentiment');
 
 const app = express();
 app.use(cors());
@@ -20,6 +20,17 @@ app.use('/api/analyse', analyseRouter);
 app.use('/api/pulse', pulseRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/related', relatedRouter);
+
+// GET /api/model/status — which sentiment model is active + training data count
+app.get('/api/model/status', async (_req, res) => {
+  try {
+    const info = modelInfo();
+    const articleCount = await Article.countDocuments({ sentimentScore: { $exists: true } });
+    res.json({ ...info, totalArticles: articleCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // GET /api/history — all analysed articles, newest first
 app.get('/api/history', async (_req, res) => {
