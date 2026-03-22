@@ -1,5 +1,5 @@
 const express = require('express');
-const { analyseSentiment } = require('../sentiment');
+const { analyseAll } = require('../sentiment');
 
 const router = express.Router();
 
@@ -27,7 +27,11 @@ router.get('/', async (req, res) => {
     // Run TF sentiment on all articles in parallel
     const results = await Promise.all(
       articles.map(async (a) => {
-        const score = await analyseSentiment(`${a.title} ${a.description || ''}`);
+        const { consensus } = await analyseAll({
+          title: a.title,
+          lead: a.description || '',
+          fullText: null,
+        });
         return {
           title: a.title,
           description: a.description || '',
@@ -35,7 +39,7 @@ router.get('/', async (req, res) => {
           url: a.url,
           publishedAt: a.publishedAt,
           image: a.image,
-          score: parseFloat(score.toFixed(3)),
+          score: parseFloat(consensus.toFixed(3)),
         };
       })
     );

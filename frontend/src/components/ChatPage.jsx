@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-const API = 'http://localhost:3001'
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 const SUGGESTED = [
   'How is the economy being covered right now?',
