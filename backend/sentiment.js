@@ -29,17 +29,19 @@ async function load() {
   );
   console.log('[sentiment] Twitter RoBERTa model loaded');
 
-  // Toxicity model (best-effort — may not be fully compatible with TF 4.x)
-  try {
-    toxicityModel = await toxicity.load(0.5, []);
-    console.log('[sentiment] Toxicity model loaded');
-  } catch (err) {
-    console.warn('[sentiment] Toxicity model unavailable:', err.message);
-    toxicityModel = null;
+  // Toxicity model — only load locally (too heavy for Render)
+  if (process.env.LOCAL_MODELS === 'true') {
+    try {
+      toxicityModel = await toxicity.load(0.5, []);
+      console.log('[sentiment] Toxicity model loaded');
+    } catch (err) {
+      console.warn('[sentiment] Toxicity model unavailable:', err.message);
+      toxicityModel = null;
+    }
   }
 
-  // Local news model if trained
-  if (fs.existsSync(LOCAL_MODEL_PATH) && fs.existsSync(LOCAL_VOCAB_PATH)) {
+  // Local news model if trained — only load locally
+  if (process.env.LOCAL_MODELS === 'true' && fs.existsSync(LOCAL_MODEL_PATH) && fs.existsSync(LOCAL_VOCAB_PATH)) {
     try {
       localModel = await tf.loadLayersModel(`file://${LOCAL_MODEL_PATH}`);
       const vocabData = JSON.parse(fs.readFileSync(LOCAL_VOCAB_PATH, 'utf8'));
