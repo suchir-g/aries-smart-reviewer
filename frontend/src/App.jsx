@@ -11,6 +11,7 @@ import DataCollect from './components/DataCollect'
 import CustomCursor from './components/CustomCursor'
 import './App.css'
 
+//hello
 const API = 'https://aries-smart-reviewer.onrender.com'
 // const API = "http://localhost:3001"
 
