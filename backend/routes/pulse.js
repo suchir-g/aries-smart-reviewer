@@ -24,25 +24,24 @@ router.get('/', async (req, res) => {
       return res.json({ topic: q, articles: [] });
     }
 
-    // Run TF sentiment on all articles in parallel
-    const results = await Promise.all(
-      articles.map(async (a) => {
-        const { consensus } = await analyseAll({
-          title: a.title,
-          lead: a.description || '',
-          fullText: null,
-        });
-        return {
-          title: a.title,
-          description: a.description || '',
-          source: a.source?.name || 'Unknown',
-          url: a.url,
-          publishedAt: a.publishedAt,
-          image: a.image,
-          score: parseFloat(consensus.toFixed(3)),
-        };
-      })
-    );
+    // Run sentiment sequentially to avoid spiking memory with 10 concurrent inferences
+    const results = [];
+    for (const a of articles) {
+      const { consensus } = await analyseAll({
+        title: a.title,
+        lead: a.description || '',
+        fullText: null,
+      });
+      results.push({
+        title: a.title,
+        description: a.description || '',
+        source: a.source?.name || 'Unknown',
+        url: a.url,
+        publishedAt: a.publishedAt,
+        image: a.image,
+        score: parseFloat(consensus.toFixed(3)),
+      });
+    }
 
     results.sort((a, b) => b.score - a.score);
 
