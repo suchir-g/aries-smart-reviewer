@@ -4,37 +4,32 @@ const toxicity = require('@tensorflow-models/toxicity');
 const fs   = require('fs');
 const path = require('path');
 
-const IMDB_MODEL_URL    = 'https://storage.googleapis.com/tfjs-models/tfjs/sentiment_cnn_v1/model.json';
-const IMDB_METADATA_URL = 'https://storage.googleapis.com/tfjs-models/tfjs/sentiment_cnn_v1/metadata.json';
-
 const LOCAL_MODEL_DIR  = path.join(__dirname, 'news-sentiment-model');
 const LOCAL_MODEL_PATH = path.join(LOCAL_MODEL_DIR, 'model.json');
 const LOCAL_VOCAB_PATH = path.join(LOCAL_MODEL_DIR, 'vocab.json');
 const LOCAL_STATS_PATH = path.join(LOCAL_MODEL_DIR, 'stats.json');
 
-let imdbModel      = null;
-let imdbMetadata   = null;
-let localModel     = null;
-let localVocab     = null;
-let localMaxLen    = null;
-let localStats     = null;
-let toxicityModel  = null;
+let sentimentPipeline = null;
+let localModel        = null;
+let localVocab        = null;
+let localMaxLen       = null;
+let localStats        = null;
+let toxicityModel     = null;
 
 // ── Load ──────────────────────────────────────────────────────────────────────
 
 async function load() {
-  if (imdbModel) return; // already loaded
+  if (sentimentPipeline) return;
 
-  // Always load IMDB
-  const [loadedModel, res] = await Promise.all([
-    tf.loadLayersModel(IMDB_MODEL_URL),
-    fetch(IMDB_METADATA_URL),
-  ]);
-  imdbModel    = loadedModel;
-  imdbMetadata = await res.json();
-  console.log('[sentiment] IMDB model loaded');
+  // Twitter RoBERTa — trained on 124M tweets, far better than IMDB for news text
+  const { pipeline } = await import('@xenova/transformers');
+  sentimentPipeline = await pipeline(
+    'sentiment-analysis',
+    'Xenova/twitter-roberta-base-sentiment-latest',
+  );
+  console.log('[sentiment] Twitter RoBERTa model loaded');
 
-  // Load toxicity model (best-effort — may not be fully compatible with TF 4.x)
+  // Toxicity model (best-effort — may not be fully compatible with TF 4.x)
   try {
     toxicityModel = await toxicity.load(0.5, []);
     console.log('[sentiment] Toxicity model loaded');
@@ -43,7 +38,7 @@ async function load() {
     toxicityModel = null;
   }
 
-  // Load local news model if it exists
+  // Local news model if trained
   if (fs.existsSync(LOCAL_MODEL_PATH) && fs.existsSync(LOCAL_VOCAB_PATH)) {
     try {
       localModel = await tf.loadLayersModel(`file://${LOCAL_MODEL_PATH}`);
@@ -53,7 +48,7 @@ async function load() {
       localStats  = fs.existsSync(LOCAL_STATS_PATH)
         ? JSON.parse(fs.readFileSync(LOCAL_STATS_PATH, 'utf8'))
         : {};
-      console.log(`[sentiment] Local news model loaded`);
+      console.log('[sentiment] Local news model loaded');
     } catch (err) {
       console.warn('[sentiment] Failed to load local model:', err.message);
       localModel = null;
@@ -61,22 +56,28 @@ async function load() {
   }
 }
 
-// ── Tokenisation ──────────────────────────────────────────────────────────────
+// ── Inference ─────────────────────────────────────────────────────────────────
 
-function tokenizeIMDB(text) {
-  const { word_index, index_from, max_len, vocabulary_size } = imdbMetadata;
-  const words = text.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
-  const indices = words
-    .map(w => {
-      if (word_index[w] === undefined) return 2;
-      const idx = word_index[w] + index_from;
-      return idx < vocabulary_size ? idx : 2;
-    })
-    .slice(0, max_len);
-  const padded = new Array(max_len).fill(0);
-  const offset = max_len - indices.length;
-  indices.forEach((v, i) => { padded[offset + i] = v; });
-  return padded;
+// Returns a score in [-1, 1] using Twitter RoBERTa (positive - negative probability)
+async function scoreText(text) {
+  const input   = text.slice(0, 512); // RoBERTa token limit
+  const results = await sentimentPipeline(input, { topk: 3 });
+  const map     = {};
+  results.forEach(r => { map[r.label.toLowerCase()] = r.score; });
+  return (map.positive ?? 0) - (map.negative ?? 0); // [-1, 1]
+}
+
+// Returns overall toxicity probability [0, 1], or null if model unavailable
+async function scoreToxicity(text) {
+  if (!toxicityModel) return null;
+  try {
+    const snippet     = text.slice(0, 500);
+    const predictions = await toxicityModel.classify([snippet]);
+    const overall     = predictions.find(p => p.label === 'toxicity');
+    return overall ? overall.results[0].probabilities[1] : null;
+  } catch {
+    return null;
+  }
 }
 
 function tokenizeLocal(text) {
@@ -86,38 +87,11 @@ function tokenizeLocal(text) {
   return [...new Array(localMaxLen - seq.length).fill(0), ...seq];
 }
 
-// ── Inference ─────────────────────────────────────────────────────────────────
-
-async function scoreIMDB(text) {
-  const tokens = tokenizeIMDB(text);
-  const input  = tf.tensor2d([tokens], [1, imdbMetadata.max_len], 'int32');
-  const pred   = imdbModel.predict(input);
-  const [prob] = await pred.data();
-  input.dispose(); pred.dispose();
-  // IMDB is a binary classifier — raw output clusters near 0 or 1.
-  // Apply tanh compression to avoid ±1.00 extremes in news scoring.
-  const raw = prob * 2 - 1;             // linear map: [0,1] → [-1,1]
-  return Math.tanh(raw * 1.2) * 0.72;  // squash extremes, cap at ~±0.72
-}
-
-// Returns overall toxicity probability [0, 1], or null if model unavailable
-async function scoreToxicity(text) {
-  if (!toxicityModel) return null;
-  try {
-    const snippet = text.slice(0, 500); // keep it fast
-    const predictions = await toxicityModel.classify([snippet]);
-    const overall = predictions.find(p => p.label === 'toxicity');
-    return overall ? overall.results[0].probabilities[1] : null;
-  } catch {
-    return null;
-  }
-}
-
 async function scoreLocal(text) {
   const tokens = tokenizeLocal(text);
   const input  = tf.tensor2d([tokens], [1, localMaxLen], 'int32');
   const pred   = localModel.predict(input);
-  const [score] = await pred.data(); // tanh, already [-1,1]
+  const [score] = await pred.data();
   input.dispose(); pred.dispose();
   return score;
 }
@@ -134,7 +108,7 @@ async function analyseAll({ title, lead, fullText }) {
 
   // 1. Lead paragraph
   if (lead && lead.trim()) {
-    const leadScore = await scoreIMDB(lead);
+    const leadScore = await scoreText(lead);
     models.push({
       name: 'Lead',
       score: Number(leadScore.toFixed(4)),
@@ -143,15 +117,15 @@ async function analyseAll({ title, lead, fullText }) {
   }
 
   // 2. Full body
-  const bodyText = fullText || `${title} ${lead || ''}`;
-  const bodyScore = await scoreIMDB(bodyText);
+  const bodyText  = fullText || `${title} ${lead || ''}`;
+  const bodyScore = await scoreText(bodyText);
   models.push({
     name: 'Full Text',
     score: Number(bodyScore.toFixed(4)),
     note: 'Sentiment across the entire article',
   });
 
-  // 4. Local news model on full body
+  // 3. Local news model on full body
   if (localModel) {
     const local = await scoreLocal(bodyText);
     models.push({
@@ -161,7 +135,7 @@ async function analyseAll({ title, lead, fullText }) {
     });
   }
 
-  // 5. Toxicity — runs in parallel, maps toxic probability to [-1, 0] range
+  // 4. Toxicity — maps toxic probability to [-1, 0] range
   const toxicityProb = await scoreToxicity(bodyText);
   if (toxicityProb !== null) {
     models.push({
@@ -173,29 +147,27 @@ async function analyseAll({ title, lead, fullText }) {
 
   // Weighted base: Full Text carries more signal than Lead
   const WEIGHTS = { 'Full Text': 0.65, 'Lead': 0.35 };
-  const coreModels = models.filter(m => m.name !== 'News Model');
-  const totalWeight = coreModels.reduce((sum, m) => sum + (WEIGHTS[m.name] ?? 0.2), 0);
+  const coreModels  = models.filter(m => m.name !== 'News Model' && m.name !== 'Toxicity');
+  const totalWeight = coreModels.reduce((sum, m) => sum + (WEIGHTS[m.name] ?? 0.5), 0);
   const weightedBase = coreModels.reduce((sum, m) =>
-    sum + m.score * (WEIGHTS[m.name] ?? 0.2), 0) / totalWeight;
+    sum + m.score * (WEIGHTS[m.name] ?? 0.5), 0) / totalWeight;
 
   // Certainty: std dev across core passes — high disagreement dampens toward 0
-  const mean = coreModels.reduce((s, m) => s + m.score, 0) / coreModels.length;
+  const mean   = coreModels.reduce((s, m) => s + m.score, 0) / coreModels.length;
   const stdDev = Math.sqrt(
     coreModels.reduce((s, m) => s + (m.score - mean) ** 2, 0) / coreModels.length
   );
-  // certainty in [0.45, 1.0] — even max disagreement keeps some signal
   const certainty = Math.max(0.45, 1 - stdDev * 1.2);
-  const dampened = weightedBase * certainty;
+  const dampened  = weightedBase * certainty;
 
-  // News model nudge: if available, blend in 15% of its score
+  // News model nudge: if available, blend in 15%
   const newsModel = models.find(m => m.name === 'News Model');
-  let consensus = newsModel
+  let consensus   = newsModel
     ? dampened * 0.85 + newsModel.score * 0.15
     : dampened;
 
-  // Toxicity override: if content is highly toxic, hard-anchor into negative territory
+  // Toxicity override: high toxicity hard-anchors into negative territory
   if (toxicityProb !== null && toxicityProb > 0.7) {
-    // Clamp consensus to at most -0.3, scaling with toxicity strength
     const toxicityCap = -(0.3 + (toxicityProb - 0.7) * (0.7 / 0.3));
     consensus = Math.min(consensus, toxicityCap);
   }
@@ -203,17 +175,16 @@ async function analyseAll({ title, lead, fullText }) {
   return { consensus: Number(consensus.toFixed(4)), models };
 }
 
-// Kept for compatibility with pulse route which only needs a single score
+// Kept for compatibility with pulse route
 async function analyseSentiment(text) {
   await load();
-  return scoreIMDB(text);
+  return scoreText(text);
 }
 
 function modelInfo() {
   return {
-    loaded: !!imdbModel,
-    imdb: !!imdbModel,
-    local: !!localModel,
+    loaded: !!sentimentPipeline,
+    local:  !!localModel,
     localStats: localStats ?? null,
   };
 }
