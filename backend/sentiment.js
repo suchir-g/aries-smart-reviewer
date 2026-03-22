@@ -124,23 +124,15 @@ async function scoreLocal(text) {
 
 /**
  * Returns { consensus, models: [{ name, score, note }] }
- * Runs across headline, lead paragraph, and full body independently,
- * plus the local news model if trained.
+ * Runs across lead paragraph and full body independently,
+ * plus the local news model and toxicity classifier if available.
  */
 async function analyseAll({ title, lead, fullText }) {
   await load();
 
   const models = [];
 
-  // 1. Headline only
-  const headlineScore = await scoreIMDB(title);
-  models.push({
-    name: 'Headline',
-    score: Number(headlineScore.toFixed(4)),
-    note: 'Sentiment of the title alone',
-  });
-
-  // 2. Lead paragraph
+  // 1. Lead paragraph
   if (lead && lead.trim()) {
     const leadScore = await scoreIMDB(lead);
     models.push({
@@ -150,7 +142,7 @@ async function analyseAll({ title, lead, fullText }) {
     });
   }
 
-  // 3. Full body
+  // 2. Full body
   const bodyText = fullText || `${title} ${lead || ''}`;
   const bodyScore = await scoreIMDB(bodyText);
   models.push({
@@ -179,8 +171,8 @@ async function analyseAll({ title, lead, fullText }) {
     });
   }
 
-  // Weighted base: Full Text carries the most signal, Lead second, Headline least
-  const WEIGHTS = { 'Full Text': 0.50, 'Lead': 0.30, 'Headline': 0.20 };
+  // Weighted base: Full Text carries more signal than Lead
+  const WEIGHTS = { 'Full Text': 0.65, 'Lead': 0.35 };
   const coreModels = models.filter(m => m.name !== 'News Model');
   const totalWeight = coreModels.reduce((sum, m) => sum + (WEIGHTS[m.name] ?? 0.2), 0);
   const weightedBase = coreModels.reduce((sum, m) =>

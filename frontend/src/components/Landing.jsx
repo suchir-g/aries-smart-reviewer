@@ -150,14 +150,13 @@ export default function Landing({ history, onSearch, setPage }) {
           <div className="landing-how-steps">
             <div className="landing-how-step">
               <span className="landing-how-num">01</span>
-              <h3 className="landing-how-step-title">Three independent passes</h3>
+              <h3 className="landing-how-step-title">Two independent passes</h3>
               <p className="landing-how-step-body">
-                Each article is scored separately across its headline, lead paragraph, and full body by a TensorFlow CNN. Each pass returns a score in [−1, +1]. Divergence between them is itself informative — a sensational headline with a neutral body is a framing signal.
+                Each article is scored separately across its lead paragraph and full body by a TensorFlow CNN. Each pass returns a score in [−1, +1]. Divergence between them is itself a signal — a calm opening with a charged body suggests escalating framing.
               </p>
               <div className="landing-formula">
-                <span className="lf-row"><span className="lf-label">Headline</span><span className="lf-val">× 0.20</span></span>
-                <span className="lf-row"><span className="lf-label">Lead</span><span className="lf-val">× 0.30</span></span>
-                <span className="lf-row"><span className="lf-label">Full Text</span><span className="lf-val">× 0.50</span></span>
+                <span className="lf-row"><span className="lf-label">Lead</span><span className="lf-val">× 0.35</span></span>
+                <span className="lf-row"><span className="lf-label">Full Text</span><span className="lf-val">× 0.65</span></span>
               </div>
             </div>
             <div className="landing-how-step">
