@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { scoreToColour } from '../utils/sentiment'
-
-const API = 'http://localhost:3001'
+import { apiFetch } from '../utils/api'
 
 const SEED_TOPICS = [
   'Gaza conflict', 'US elections', 'climate change', 'artificial intelligence',
@@ -73,9 +72,7 @@ export default function DataCollect() {
     setArticles([])
     setDoneCount(0)
     try {
-      const res = await fetch(`${API}/api/news?q=${encodeURIComponent(topic.trim())}`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+      const data = await apiFetch(`/api/news?q=${encodeURIComponent(topic.trim())}`)
       setArticles(data.map(a => ({ ...a, status: 'pending', sentimentScore: 0 })))
     } catch (err) {
       setError(err.message)
@@ -102,13 +99,11 @@ export default function DataCollect() {
       ))
 
       try {
-        const res = await fetch(`${API}/api/analyse`, {
+        const data = await apiFetch('/api/analyse', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(article),
         })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error)
         setArticles(prev => prev.map((a, idx) =>
           idx === i ? {
             ...a,

@@ -9,22 +9,8 @@ import TopicPulse from './components/TopicPulse'
 import ChatPage from './components/ChatPage'
 import DataCollect from './components/DataCollect'
 import CustomCursor from './components/CustomCursor'
+import { apiFetch } from './utils/api'
 import './App.css'
-
-//hello
-const API = 'https://aries-smart-reviewer.onrender.com'
-// const API = "http://localhost:3001"
-
-async function apiFetch(path, options) {
-  const res = await fetch(`${API}${path}`, options)
-  const contentType = res.headers.get('content-type') ?? ''
-  if (!contentType.includes('application/json')) {
-    throw new Error(`Server error ${res.status} — is the backend running?`)
-  }
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
-  return data
-}
 
 export default function App() {
   const [page, setPage] = useState('landing')

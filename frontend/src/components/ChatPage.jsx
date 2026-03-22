@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
+import { apiUrl } from '../utils/api'
 
 const SUGGESTED = [
   'How is the economy being covered right now?',
@@ -76,7 +75,7 @@ export default function ChatPage() {
     const history = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
 
     try {
-      const res = await fetch(`${API}/api/chat`, {
+      const res = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: history }),

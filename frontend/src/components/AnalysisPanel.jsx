@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { scoreToColour } from '../utils/sentiment'
-
-const API = 'http://localhost:3001'
+import { apiFetch } from '../utils/api'
 
 const SENTIMENT_STYLES = {
   positive: { label: 'Positive', className: 'badge badge-positive' },
@@ -32,8 +31,7 @@ function RelatedArticles({ topics, currentUrl }) {
   useEffect(() => {
     if (!topics?.length) return
     const q = topics.slice(0, 2).join(' ')
-    fetch(`${API}/api/related?q=${encodeURIComponent(q)}&exclude=${encodeURIComponent(currentUrl)}`)
-      .then(r => r.json())
+    apiFetch(`/api/related?q=${encodeURIComponent(q)}&exclude=${encodeURIComponent(currentUrl)}`)
       .then(data => Array.isArray(data) ? setArticles(data) : setArticles([]))
       .catch(() => setArticles([]))
   }, [topics, currentUrl])
