@@ -69,8 +69,14 @@ body::after {
   }
 }
 
-/* Custom cursor — hide native */
-*, *::before, *::after { cursor: none !important; }
+/* Custom cursor — hide native on pointer devices only */
+@media (pointer: fine) {
+  *, *::before, *::after { cursor: none !important; }
+}
+
+@media (pointer: coarse) {
+  .cursor-dot, .cursor-ring { display: none; }
+}
 
 .cursor-dot {
   position: fixed;
