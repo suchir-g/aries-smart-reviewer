@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { scoreToColour } from '../utils/sentiment'
 
 const PRESET_TOPICS = [
-  'Technology', 'Economy', 'Climate', 'Politics',
-  'Health', 'Science', 'Conflict', 'Business',
+  'Technology', 'Economy', 'Climate', 'Politics', 'Health', 'Science',
+  'Conflict', 'Business', 'AI', 'Elections', 'Energy', 'Housing',
+  'Ukraine', 'Middle East', 'China', 'Trade', 'Inflation', 'Crime',
+  'Space', 'Healthcare', 'Immigration', 'Cybersecurity', 'Stock Markets',
 ]
 
 const TOPIC_GROUPS = [

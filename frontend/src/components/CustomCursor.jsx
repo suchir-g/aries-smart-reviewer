@@ -14,11 +14,17 @@ export default function CustomCursor() {
     let hovering = false, pressed = false
     let raf
 
-    const onMove = (e) => { mx = e.clientX; my = e.clientY }
-    const onDown = () => { pressed = true }
-    const onUp   = () => { pressed = false }
-    const onOver = (e) => {
-      hovering = !!e.target.closest(INTERACTIVE)
+    const onMove  = (e) => { mx = e.clientX; my = e.clientY }
+    const onDown  = () => { pressed = true }
+    const onUp    = () => { pressed = false }
+    const onOver  = (e) => { hovering = !!e.target.closest(INTERACTIVE) }
+    const onLeave = () => {
+      if (dotRef.current)  dotRef.current.style.opacity  = '0'
+      if (ringRef.current) ringRef.current.style.opacity = '0'
+    }
+    const onEnter = () => {
+      if (dotRef.current)  dotRef.current.style.opacity  = '1'
+      if (ringRef.current) ringRef.current.style.opacity = '1'
     }
 
     const animate = () => {
@@ -45,14 +51,18 @@ export default function CustomCursor() {
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mousedown', onDown)
     window.addEventListener('mouseup',   onUp)
-    document.addEventListener('mouseover', onOver)
+    document.addEventListener('mouseover',  onOver)
+    document.addEventListener('mouseleave', onLeave)
+    document.addEventListener('mouseenter', onEnter)
     raf = requestAnimationFrame(animate)
 
     return () => {
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mousedown', onDown)
       window.removeEventListener('mouseup',   onUp)
-      document.removeEventListener('mouseover', onOver)
+      document.removeEventListener('mouseover',  onOver)
+      document.removeEventListener('mouseleave', onLeave)
+      document.removeEventListener('mouseenter', onEnter)
       cancelAnimationFrame(raf)
     }
   }, [])

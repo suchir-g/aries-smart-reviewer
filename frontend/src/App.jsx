@@ -11,8 +11,8 @@ import DataCollect from './components/DataCollect'
 import CustomCursor from './components/CustomCursor'
 import './App.css'
 
-// const API = 'https://aries-smart-reviewer.onrender.com'
-const API = "http://localhost:3001"
+const API = 'https://aries-smart-reviewer.onrender.com'
+// const API = "http://localhost:3001"
 
 async function apiFetch(path, options) {
   const res = await fetch(`${API}${path}`, options)

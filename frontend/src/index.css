@@ -89,6 +89,7 @@ body::after {
   pointer-events: none;
   z-index: 999999;
   will-change: transform;
+  transition: opacity 0.2s;
 }
 
 .cursor-ring {
@@ -103,6 +104,7 @@ body::after {
   pointer-events: none;
   z-index: 999999;
   will-change: transform;
+  transition: opacity 0.2s;
 }
 
 h1, h2, h3 {
