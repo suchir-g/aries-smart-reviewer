@@ -1,198 +1,289 @@
 # Smart Reviewer
 
-A full-stack news intelligence app. Search articles, analyse sentiment and bias, track topic coverage, and have an agentic conversation about the news — all in one place.
+Smart Reviewer is a full-stack news analysis app. It lets you search live headlines, analyse individual articles, compare sentiment across a topic, and chat with a news-aware assistant that can use your saved history as context and run tools.
 
----
+## Core features
 
-## What it does
+- Search live articles through GNews.
+- Analyse a single article for summary, topics, sentiment, and framing.
+- Save analysed articles to MongoDB and reopen them from history.
+- Run Topic Pulse to rank current coverage by sentiment.
+- Use a chat sidebar backed by OpenAI tool calling plus lightweight retrieval from your saved analyses.
 
-- **Search & Analyse** — Find articles on any topic via GNews. Analyse any article to get an AI-generated summary, TensorFlow sentiment score, topic tags, bias indicators, and links to other sources covering the same story.
-- **Topic Pulse** — Enter a topic and see how positively or negatively it's being covered right now across multiple sources, ranked and visualised on a scatter plot and diverging bar chart.
-- **History** — Every article you analyse is saved to MongoDB. Browse your full analysis history and re-open any result.
-- **Ask the News** — A sidebar chat assistant backed by OpenAI function calling + RAG. It can search live news, run sentiment pulse on a topic, and draw on your analysis history to answer questions.
-
----
-
-## Tech stack
+## Stack
 
 | Layer | Tech |
 |---|---|
-| Frontend | React (Vite), plain CSS |
-| Backend | Node.js, Express |
-| Database | MongoDB (Mongoose) |
-| Sentiment | TensorFlow.js Node — IMDB CNN model |
-| AI / Summaries | OpenAI `gpt-4o-mini` |
-| News data | GNews API |
-| Streaming | Server-Sent Events (SSE) |
-| Markdown | `react-markdown` + `remark-gfm` |
-
----
+| Frontend | React + Vite |
+| Backend | Node.js + Express |
+| Database | MongoDB + Mongoose |
+| News source | GNews API |
+| AI analysis | OpenAI `gpt-4o-mini` |
+| Local sentiment | Xenova RoBERTa + TensorFlow.js |
+| Streaming | Server-Sent Events |
 
 ## Project structure
 
-```
+```text
 aries-smart-reviewer/
 ├── backend/
-│   ├── index.js              # Express app, MongoDB connect, sentiment preload
-│   ├── sentiment.js          # TensorFlow CNN sentiment model
+│   ├── index.js
+│   ├── sentiment.js
+│   ├── train.js
 │   ├── models/
-│   │   └── Article.js        # Mongoose schema
+│   │   └── Article.js
 │   └── routes/
-│       ├── news.js           # GET  /api/news
-│       ├── analyse.js        # POST /api/analyse
-│       ├── pulse.js          # GET  /api/pulse
-│       ├── related.js        # GET  /api/related
-│       └── chat.js           # POST /api/chat  (SSE)
+│       ├── news.js
+│       ├── analyse.js
+│       ├── pulse.js
+│       ├── related.js
+│       └── chat.js
 └── frontend/
     └── src/
-        ├── App.jsx           # Routing, state, modal, chat sidebar
+        ├── App.jsx
         ├── components/
-        │   ├── Nav.jsx
-        │   ├── Landing.jsx
-        │   ├── SearchBar.jsx
-        │   ├── ArticleCard.jsx
-        │   ├── AnalysisPanel.jsx
-        │   ├── HistoryTable.jsx
-        │   ├── TopicPulse.jsx
-        │   └── ChatPage.jsx
         └── utils/
-            └── sentiment.js  # scoreToColour() helper
+            ├── api.js
+            └── sentiment.js
 ```
 
----
+## Environment
 
-## Setup
+### `backend/.env`
 
-### Prerequisites
-
-- Node.js 18+
-- A MongoDB Atlas cluster (free tier works fine)
-- API keys for [GNews](https://gnews.io) and [OpenAI](https://platform.openai.com)
-
-### Environment variables
-
-Create `backend/.env`:
-
-```
+```bash
 MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>
 OPENAI_API_KEY=sk-...
 GNEWS_API_KEY=...
 PORT=3001
+LOCAL_MODELS=true
 ```
 
-### Install & run
+### `frontend/.env`
 
-**Backend:**
+```bash
+VITE_LOCAL_MODELS=true
+```
+
+Optional:
+
+```bash
+VITE_API_URL=http://localhost:3001
+```
+
+Frontend API resolution is:
+
+1. Use `VITE_API_URL` if it is set.
+2. Otherwise use `http://localhost:3001` when `VITE_LOCAL_MODELS=true`.
+3. Otherwise use `https://aries-smart-reviewer.onrender.com`.
+
+## Running locally
+
+Backend:
+
 ```bash
 cd backend
 npm install
-npm run dev        # auto-restarts on file changes
+npm run dev
 ```
 
-On startup you should see:
-```
-Connected to MongoDB
-[sentiment] TF model loaded
-Server running on port 3001
-```
+Frontend:
 
-**Frontend:**
 ```bash
 cd frontend
 npm install
-npm run dev        # Vite dev server at http://localhost:5173
+npm run dev
 ```
 
----
+When developing locally, make sure the frontend resolves to the local backend. The current frontend helper in `frontend/src/utils/api.js` handles that via env vars.
 
-## How it works
+## Flowcharts
 
-### Sentiment analysis
+### Main app flow
 
-Sentiment is scored locally using TensorFlow.js with a CNN model trained on the IMDB dataset — no API call needed. The pipeline:
+```mermaid
+flowchart TD
+  A[User opens app] --> B[Frontend loads history]
+  B --> C[GET /api/history]
+  C --> D[MongoDB returns analysed articles]
+  D --> E[Landing page renders]
 
-1. Tokenise the article title + description (lowercase, strip punctuation)
-2. Map each word to its index in the model's vocabulary (OOV words → index 2)
-3. Clamp any out-of-range indices to `vocabulary_size - 1` to avoid crashes
-4. Pad the sequence to `max_len` (500 tokens)
-5. Run a forward pass through the model → probability in [0, 1]
-6. Map to a score in [−1, +1]: `score = probability * 2 − 1`
+  E --> F[User searches a topic]
+  F --> G[GET /api/news]
+  G --> H[GNews returns article list]
+  H --> I[Frontend renders search results]
 
-Scores above `+0.2` are classified positive, below `−0.2` negative, otherwise neutral.
+  I --> J[User clicks Analyse]
+  J --> K[POST /api/analyse]
+  K --> L[Check MongoDB cache]
+  L --> M[Extract full article text]
+  M --> N[Run sentiment plus OpenAI analysis]
+  N --> O[Save result to MongoDB]
+  O --> P[Show analysis modal]
+```
 
-The model is preloaded into memory when the server starts so the first request isn't slow.
+### Sentiment pipeline
 
-### Article analysis (`POST /api/analyse`)
+```mermaid
+flowchart TD
+  A[Input article] --> B[Lead text pass]
+  A --> C[Full text pass]
+  B --> D[RoBERTa score]
+  C --> E[RoBERTa score]
+  D --> F[Weighted base]
+  E --> F
+  F --> G[Certainty dampening from std dev]
+  G --> H{Local news model loaded?}
+  H -- Yes --> I[Blend in 15 percent news-model score]
+  H -- No --> J[Keep dampened score]
+  I --> K{Toxicity over 0.7?}
+  J --> K
+  K -- Yes --> L[Cap score into negative territory]
+  K -- No --> M[Return consensus score]
+  L --> M
+```
 
-When you click **Analyse** on an article, two things run in parallel:
+### Chat loop
 
-1. **TensorFlow** — scores sentiment from title + description
-2. **OpenAI** (`gpt-4o-mini`) — returns a JSON object with:
-   - `summary` (2–3 sentences)
-   - `topics` (array of tags)
-   - `biasSummary` (overall framing assessment)
-   - `biasIndicators` (2–4 specific language patterns, e.g. *"uses 'regime' instead of 'government'"*)
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant F as Frontend
+  participant B as Backend
+  participant DB as MongoDB
+  participant O as OpenAI
+  participant G as GNews
 
-Results are merged and saved to MongoDB. Subsequent requests for the same URL are served from cache instantly.
+  U->>F: Send chat message
+  F->>B: POST /api/chat
+  B->>DB: Retrieve relevant analysed articles
+  DB-->>B: Context articles
+  B->>O: Start streamed chat with tools
 
-After the analysis modal opens, it also fires a background request to `/api/related` to populate the **Other Perspectives** section with articles from other sources on the same topic.
+  alt OpenAI calls search_news
+    O-->>B: Tool call search_news
+    B->>G: Search live headlines
+    G-->>B: Articles
+    B->>O: Tool result
+  else OpenAI calls run_pulse
+    O-->>B: Tool call run_pulse
+    B->>G: Search topic headlines
+    G-->>B: Articles
+    B->>B: Score articles by sentiment
+    B->>O: Tool result
+  else OpenAI answers directly
+    O-->>B: Text stream
+  end
 
-### Topic Pulse (`GET /api/pulse`)
+  O-->>B: Final streamed response
+  B-->>F: SSE events
+  F-->>U: Render chat output
+```
 
-Fetches up to 10 articles from GNews for a given topic, runs TensorFlow sentiment on all of them in parallel, sorts by score, and returns the results. Nothing is saved to the database — it's a live read-only view.
+## How the app works
 
-### Agentic chat (`POST /api/chat`)
+### Search
 
-The chat endpoint streams responses using Server-Sent Events. Each message goes through:
+`GET /api/news?q=<query>`
 
-1. **RAG retrieval** — keywords from the user's message are used to search MongoDB for relevant articles from your history. Up to 6 matching articles are injected into the system prompt as context. If nothing matches, the 5 most recent analyses are used as fallback.
+- Proxies the query to GNews.
+- Returns up to 10 articles with title, description, URL, source, date, and image.
 
-2. **OpenAI call** with two tools available:
-   - `search_news(query)` — searches GNews for live articles
-   - `run_pulse(topic)` — fetches and sentiment-scores articles on a topic
+### Article analysis
 
-3. **Agentic loop** — if the model decides to call a tool, the tool is executed, the result is added to the message history, and the model is called again. This continues until the model produces a final text response.
+`POST /api/analyse`
 
-4. **Streaming** — text deltas are forwarded to the client as `{ type: 'text', text: '...' }` SSE events. Tool invocations fire `tool_start` and `tool_end` events, which the frontend renders as inline status notes.
+Flow:
 
-The frontend reads the SSE stream, updates the message state incrementally, and renders AI responses as markdown.
+1. Check MongoDB for an existing article with the same URL.
+2. Attempt full-text extraction with `@extractus/article-extractor`.
+3. Build a lead excerpt from the article body or description.
+4. Run local sentiment analysis and OpenAI analysis in parallel.
+5. Store the merged result in MongoDB.
 
----
+Returned fields include:
+
+- `summary`
+- `topics`
+- `biasSummary`
+- `biasIndicators`
+- `sentiment`
+- `sentimentScore`
+- `sentimentReason`
+- `reviewerScores`
+
+### Sentiment pipeline
+
+Implemented in `backend/sentiment.js`.
+
+The local pipeline uses:
+
+1. A RoBERTa lead-paragraph pass.
+2. A RoBERTa full-text pass.
+3. An optional local TensorFlow news model from `backend/news-sentiment-model/`.
+4. An optional toxicity model.
+
+Lead and full-text scores are blended with weights of 0.35 and 0.65. Disagreement lowers certainty. If the local news model exists, it nudges the final score. High toxicity can cap the final score into negative territory.
+
+Important:
+
+- `backend/index.js` preloads the local sentiment model at startup.
+- If model download or loading fails, routes that depend on local sentiment can return `500`.
+- `LOCAL_MODELS=true` enables the heavier local pipeline.
+
+### Topic Pulse
+
+`GET /api/pulse?q=<topic>`
+
+- Fetches up to 10 current articles from GNews.
+- Scores each article sequentially through `analyseAll()` to avoid large concurrent memory spikes.
+- Sorts results from most positive to most negative.
+- Does not save results to MongoDB.
+
+### Related articles
+
+`GET /api/related?q=<topic>&exclude=<url>`
+
+- Searches GNews for related coverage.
+- Filters out the currently viewed article.
+- Returns up to 5 alternative links.
+
+### Chat
+
+`POST /api/chat`
+
+The chat route:
+
+1. Pulls relevant analysed articles from MongoDB using keyword matching.
+2. Injects those articles into the system prompt as lightweight retrieval context.
+3. Streams responses from OpenAI over SSE.
+4. Lets the model call two tools:
+   - `search_news`
+   - `run_pulse`
 
 ## API reference
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/news?q=query` | Search GNews, returns up to 10 articles |
-| `POST` | `/api/analyse` | Full analysis (TF sentiment + OpenAI). Cached by URL. |
-| `GET` | `/api/history` | All analysed articles, newest first |
-| `GET` | `/api/pulse?q=topic` | Live sentiment ranking for a topic |
-| `GET` | `/api/related?q=topic&exclude=url` | Related articles from other sources |
-| `POST` | `/api/chat` | Streaming SSE agentic chat |
+| `GET` | `/api/news?q=query` | Search GNews |
+| `POST` | `/api/analyse` | Analyse and cache an article |
+| `GET` | `/api/history` | Return analysed articles, newest first |
+| `GET` | `/api/pulse?q=topic` | Rank current coverage by sentiment |
+| `GET` | `/api/related?q=topic&exclude=url` | Fetch related coverage |
+| `GET` | `/api/model/status` | Report loaded-model status and article count |
+| `POST` | `/api/chat` | Stream chat responses over SSE |
 
-### Article object (stored in MongoDB)
+## Known failure points
 
-```js
-{
-  title, description, url, source, publishedAt, image,
-  summary,           // AI-generated
-  sentiment,         // "positive" | "neutral" | "negative"
-  sentimentScore,    // number, -1.0 to +1.0
-  sentimentReason,   // e.g. "TensorFlow CNN — confidence 91% positive"
-  topics,            // string[]
-  biasSummary,       // string
-  biasIndicators,    // string[]
-  analysedAt         // Date
-}
-```
+These are the main reasons you may see intermittent `500` responses during development:
 
----
+- MongoDB Atlas connection failures.
+- GNews timeouts or invalid API responses.
+- OpenAI API failures or malformed JSON output.
+- Local sentiment model download/load issues when `LOCAL_MODELS=true`.
 
-## Design notes
+If you are developing on localhost and see CORS-like errors, first confirm the frontend is pointing at the local backend instead of the hosted Render URL.
 
-- Typography: **Playfair Display** (headings) + **Lora** (body) — editorial/newspaper feel
-- Colour palette: warm off-white `#FAFAF8` with muted borders, full dark mode support
-- Sentiment colours: `#ef4444` (−1) → `#9ca3af` (0) → `#22c55e` (+1), interpolated continuously
-- Grain overlay: fixed SVG `feTurbulence` noise texture at ~4% opacity for texture
-- Landing hero: soft blurred colour blobs (amber, rose, sage) behind the headline
-- Chat is a slide-in sidebar (420px) available on every page, not a separate route
+## Security note
+
+Keep API keys and database credentials only in `.env` files. If a real key has ever been exposed in logs, screenshots, or committed history, rotate it.

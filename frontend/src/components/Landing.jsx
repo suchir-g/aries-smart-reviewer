@@ -152,7 +152,7 @@ export default function Landing({ history, onSearch, setPage }) {
               <span className="landing-how-num">01</span>
               <h3 className="landing-how-step-title">Two independent passes</h3>
               <p className="landing-how-step-body">
-                Each article is scored separately across its lead paragraph and full body by a TensorFlow CNN. Each pass returns a score in [−1, +1]. Divergence between them is itself a signal — a calm opening with a charged body suggests escalating framing.
+                Each article is scored separately across its lead paragraph and full body by the local sentiment ensemble. Each pass returns a score in [−1, +1], and divergence between them is itself a signal — a calm opening with a charged body suggests escalating framing.
               </p>
               <div className="landing-formula">
                 <span className="lf-row"><span className="lf-label">Lead</span><span className="lf-val">× 0.35</span></span>
@@ -187,7 +187,7 @@ export default function Landing({ history, onSearch, setPage }) {
               <span className="landing-how-num">04</span>
               <h3 className="landing-how-step-title">Toxicity override</h3>
               <p className="landing-how-step-body">
-                A TensorFlow toxicity classifier runs on every article. If toxic content is detected above 70% confidence, the final score is hard-anchored into negative territory regardless of the sentiment passes — preventing harmful framing from reading as positive.
+                When the local toxicity model is available, it adds a final safety check. If toxic content is detected above 70% confidence, the final score is hard-anchored into negative territory regardless of the sentiment passes — preventing harmful framing from reading as positive.
               </p>
               <div className="landing-formula">
                 <span className="lf-row"><span className="lf-label">threshold</span><span className="lf-val">p &gt; 0.70</span></span>
