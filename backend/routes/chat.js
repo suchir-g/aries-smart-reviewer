@@ -67,6 +67,10 @@ async function executeTool(name, args) {
 }
 
 // RAG: pull articles from DB relevant to the user's query
+// rn this is lexical retrieval, not *semantic* retrieval.
+// to make this better, maybe we can do some sort of synonym matching with cosine distanec?
+// need to do a bit more research on embedding models.
+
 async function retrieveContext(query) {
   const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 3);
 
@@ -85,6 +89,7 @@ async function retrieveContext(query) {
 }
 
 // POST /api/chat — SSE stream
+// this is basically opening one connection and leaving it there (unidirectionally)
 router.post('/', async (req, res) => {
   const { messages } = req.body;
   if (!messages?.length) return res.status(400).json({ error: 'messages required' });

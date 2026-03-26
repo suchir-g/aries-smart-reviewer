@@ -33,7 +33,7 @@ function tokenise(text) {
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
-    .filter(Boolean);
+    .filter(Boolean); //'' is falsy, but anything with length > 0 is truthy. therefore we can .filter(Boolean) (do not ask me why this makes sense)
 }
 
 function buildVocab(texts) {
@@ -64,7 +64,8 @@ function encode(text, vocab) {
 }
 
 // ── Model architecture ────────────────────────────────────────────────────────
-
+// i need to look more into ml before i do this properly. this is claude's model! and it worked well 
+// but i had to prompt in early stopping since it seemed to have a tendency of overfitting and that
 function buildModel(vocabSize) {
   const model = tf.sequential();
 
@@ -197,7 +198,7 @@ async function main() {
     bestValLoss,
   }, null, 2));
 
-  console.log(`\nModel saved to ${MODEL_DIR}`);
+  console.log(`Model saved to ${MODEL_DIR}`);
   console.log(`Best val loss: ${bestValLoss.toFixed(4)}`);
 
   xTrain.dispose(); yTrain.dispose(); xVal.dispose(); yVal.dispose();

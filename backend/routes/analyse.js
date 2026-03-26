@@ -51,16 +51,27 @@ router.post('/', async (req, res) => {
         max_tokens: 512,
         messages: [{
           role: 'user',
-          content: `Analyse this news article and respond ONLY with a JSON object, no other text:
+          content: `Analyze the following news article and respond ONLY with a valid JSON object. Do not include any extra text, explanations, or formatting.
+
+Return the JSON in exactly this structure:
+
 {
-  "summary": "2-3 sentence summary of the article",
-  "topics": ["topic1", "topic2", "topic3"],
-  "biasSummary": "1-2 sentences on any framing bias, missing perspectives, or loaded language — or 'No notable bias detected' if balanced",
-  "biasIndicators": ["specific phrase or pattern 1", "specific phrase or pattern 2"]
+  "summary": "2-3 concise sentences summarizing the key facts of the article",
+  "topics": ["primary topic", "secondary topic", "tertiary topic"],
+  "biasSummary": "1-2 sentences describing framing bias, omissions, or loaded language — or exactly 'No notable bias detected' if the article is balanced",
+  "biasIndicators": ["indicator 1", "indicator 2"]
 }
 
-For biasIndicators: identify 2-4 concrete language choices or framing patterns — e.g. emotionally loaded words, passive voice hiding agency, only quoting one side, use of 'regime' vs 'government'. Keep each under 12 words. Return an empty array if none.
-
+Rules:
+- Summary must be neutral and factual.
+- Topics must be short noun phrases (exactly 3).
+- Bias analysis should focus on framing, sourcing balance, word choice, or agency attribution.
+- BiasIndicators:
+  - Include 2–4 concrete language or framing examples if bias exists.
+  - Each indicator must be 12 words or fewer.
+  - Examples include emotionally loaded terms, passive voice hiding responsibility, one-sided sourcing, or labels like “regime” vs “government”.
+  - Return an empty array [] if no clear bias is present.
+- Output must be valid JSON (double quotes only, no trailing commas).
 ${articleBody}`,
         }],
       }),
@@ -88,7 +99,7 @@ ${articleBody}`,
     const sentimentReason = [
       usedFullText ? 'Full article' : 'Snippet only',
       `· ${models.length} passes · deduced ${score > 0 ? '+' : ''}${score.toFixed(2)}`,
-      contested ? '· ⚠ passes disagree' : '',
+      contested ? '· passes disagree' : '',
     ].join(' ').trim();
 
     const article = await Article.create({
